@@ -1,0 +1,33 @@
+import os
+import platform
+import subprocess
+
+# Define the command to execute the job system
+job_executable = os.path.join(os.getcwd(), "dist", "job_system.exe")
+
+# Define the scheduling command based on OS
+def schedule_job():
+    if platform.system() == "Windows":
+        # Windows Task Scheduler command
+        task_name = "AI_Job_Search"
+        command = (
+            f'schtasks /create /tn {task_name} /tr "{job_executable}" /sc daily /st 08:00 /f'
+        )
+    elif platform.system() == "Linux" or platform.system() == "Darwin":
+        # Linux/macOS Cron Job command
+        cron_job = f"0 8 * * * {job_executable}"
+        command = f'(crontab -l 2>/dev/null; echo "{cron_job}") | crontab -'
+    else:
+        print("Unsupported OS")
+        return
+    
+    # Execute the scheduling command
+    try:
+        subprocess.run(command, shell=True, check=True)
+        print("Job scheduler set up successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to schedule job: {e}")
+
+# Run the scheduler
+if __name__ == "__main__":
+    schedule_job()

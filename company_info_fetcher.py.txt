@@ -1,0 +1,43 @@
+import json
+import requests
+from bs4 import BeautifulSoup
+import os
+
+# Load categorized job listings
+categorized_jobs_file = "categorized_jobs.json"
+output_folder = "company_info"
+os.makedirs(output_folder, exist_ok=True)
+
+def load_categorized_jobs(filename):
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Function to search for company info on the web
+def fetch_company_info(company_name):
+    search_url = f"https://www.google.com/search?q={company_name.replace(' ', '+')}+company+profile"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(search_url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    
+    # Extract basic company info
+    snippets = soup.find_all("span")
+    company_info = "\n".join([snippet.get_text() for snippet in snippets[:10]])  # Limiting to 10 snippets
+    return company_info if company_info else "No relevant info found."
+
+# Process high-priority job listings
+categorized_jobs = load_categorized_jobs(categorized_jobs_file)
+high_priority_jobs = categorized_jobs.get("High Priority", [])
+
+for job in high_priority_jobs:
+    company_name = job["company"]
+    print(f"Fetching information for {company_name}...")
+    info = fetch_company_info(company_name)
+    
+    # Save company info to a text file
+    filename = os.path.join(output_folder, f"{company_name.replace(' ', '_')}.txt")
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(info)
+    
+    print(f"Saved company info for {company_name} in {filename}")
+
+print("Company information retrieval completed.")

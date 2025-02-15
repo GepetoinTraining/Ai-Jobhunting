@@ -1,0 +1,58 @@
+import json
+import os
+import tkinter as tk
+from tkinter import messagebox
+import subprocess
+
+# Define paths
+categorized_jobs_file = "categorized_jobs.json"
+company_info_folder = "company_info"
+
+# Load categorized job listings
+def load_categorized_jobs(filename):
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Function to fetch company info
+def get_company_info(company_name):
+    filepath = os.path.join(company_info_folder, f"{company_name.replace(' ', '_')}.txt")
+    if os.path.exists(filepath):
+        with open(filepath, "r", encoding="utf-8") as f:
+            return f.read()
+    return "No company info available."
+
+# Function to send application
+def send_application(job):
+    response = messagebox.askyesno("Confirm", f"Send application for {job['title']} at {job['company']}?")
+    if response:
+        subprocess.run(["python", "job_application_sender.py"])  # Run the application sender script
+        messagebox.showinfo("Success", f"Application sent for {job['title']} at {job['company']}")
+
+# Create GUI
+def create_dashboard():
+    root = tk.Tk()
+    root.title("AI Job Dashboard")
+    root.geometry("800x600")
+    
+    categorized_jobs = load_categorized_jobs(categorized_jobs_file)
+    high_priority_jobs = categorized_jobs.get("High Priority", [])
+    
+    for job in high_priority_jobs:
+        frame = tk.Frame(root, pady=5)
+        frame.pack(fill="x")
+        
+        job_info = f"{job['title']} at {job['company']} - {job['location']}"
+        label = tk.Label(frame, text=job_info, anchor="w")
+        label.pack(side="left", padx=10)
+        
+        info_button = tk.Button(frame, text="View Company Info", command=lambda j=job: messagebox.showinfo(j['company'], get_company_info(j['company'])))
+        info_button.pack(side="left", padx=5)
+        
+        apply_button = tk.Button(frame, text="Apply", command=lambda j=job: send_application(j))
+        apply_button.pack(side="right", padx=10)
+    
+    root.mainloop()
+
+# Run the dashboard
+if __name__ == "__main__":
+    create_dashboard()

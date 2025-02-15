@@ -1,0 +1,40 @@
+import json
+import requests
+from bs4 import BeautifulSoup
+
+def fetch_job_listings(query, num_results=10):
+    search_url = f"https://www.indeed.com/jobs?q={query.replace(' ', '+')}&limit={num_results}"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(search_url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
+    jobs = []
+    
+    for job_card in soup.find_all("div", class_="job_seen_beacon"):
+        title_tag = job_card.find("h2", class_="jobTitle")
+        company_tag = job_card.find("span", class_="companyName")
+        location_tag = job_card.find("div", class_="companyLocation")
+        salary_tag = job_card.find("div", class_="salary-snippet")
+        description_tag = job_card.find("div", class_="job-snippet")
+        
+        if title_tag and company_tag and location_tag:
+            job = {
+                "title": title_tag.text.strip(),
+                "company": company_tag.text.strip(),
+                "location": location_tag.text.strip(),
+                "salary": int(salary_tag.text.replace("$", "").replace(",", "").split(" ")[0]) if salary_tag else 0,
+                "job_type": "Full-Time",  # Placeholder, needs improvement
+                "description": description_tag.text.strip() if description_tag else ""
+            }
+            jobs.append(job)
+    return jobs
+
+# Fetch job listings based on a predefined query
+query = "machine learning engineer"
+job_listings = fetch_job_listings(query, num_results=10)
+
+# Save to file
+filename = "job_listings.json"
+with open(filename, "w", encoding="utf-8") as f:
+    json.dump(job_listings, f, indent=4)
+
+print(f"Job listings saved to {filename}")

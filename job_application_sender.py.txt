@@ -1,0 +1,81 @@
+import json
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.base import MIMEBase
+from email import encoders
+
+# Load job listings
+def load_categorized_jobs(filename="job_listings.json"):
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Email Configuration
+EMAIL_ADDRESS = "your_email@example.com"
+EMAIL_PASSWORD = "your_password"
+SMTP_SERVER = "smtp.example.com"
+SMTP_PORT = 587
+
+# AI-generated application materials
+cv_path = "cv.pdf"
+cover_letter_path = "cover_letter.pdf"
+portfolio_path = "portfolio.zip"
+
+# Function to send job applications
+def send_application(job):
+    recipient_email = job.get("email", "")  # Assuming job listings contain an email field
+    if not recipient_email:
+        print(f"Skipping {job['title']} at {job['company']} - No email provided")
+        return
+    
+    msg = MIMEMultipart()
+    msg['From'] = EMAIL_ADDRESS
+    msg['To'] = recipient_email
+    msg['Subject'] = f"Application for {job['title']} at {job['company']}"
+    
+    # Email body
+    body = f"""
+    Dear Hiring Manager,
+    
+    I am excited to apply for the {job['title']} position at {job['company']}. Attached are my CV, cover letter, and portfolio. 
+    Looking forward to discussing how my skills align with your needs.
+    
+    Best regards,
+    AI Applicant
+    """
+    msg.attach(MIMEText(body, 'plain'))
+    
+    # Attach files
+    for file_path in [cv_path, cover_letter_path, portfolio_path]:
+        attach_file(msg, file_path)
+    
+    # Send email
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        text = msg.as_string()
+        server.sendmail(EMAIL_ADDRESS, recipient_email, text)
+        server.quit()
+        print(f"Application sent to {recipient_email} for {job['title']} at {job['company']}")
+    except Exception as e:
+        print(f"Failed to send application to {recipient_email}: {e}")
+
+# Function to attach files to email
+def attach_file(msg, file_path):
+    try:
+        attachment = open(file_path, "rb")
+        part = MIMEBase("application", "octet-stream")
+        part.set_payload(attachment.read())
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", f"attachment; filename={file_path}")
+        msg.attach(part)
+        attachment.close()
+    except Exception as e:
+        print(f"Failed to attach {file_path}: {e}")
+
+# Load high-priority jobs and send applications
+categorized_jobs = load_categorized_jobs("categorized_jobs.json")
+high_priority_jobs = categorized_jobs.get("High Priority", [])
+for job in high_priority_jobs:
+    send_application(job)

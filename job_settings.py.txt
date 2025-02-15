@@ -1,0 +1,10 @@
+{
+    "preferred_roles": ["Machine Learning Engineer", "AI Researcher", "Data Scientist"],
+    "preferred_locations": ["Remote", "San Francisco", "New York"],
+    "salary_expectation": 80000,
+    "preferred_job_types": ["Full-Time", "Contract"],
+    "blacklisted_keywords": ["intern", "entry-level", "volunteer"],
+    "track_trends": true,
+    "trend_analysis_window_days": 30,
+    "update_frequency": "daily"
+}

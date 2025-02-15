@@ -1,0 +1,53 @@
+import json
+import pandas as pd
+import os
+from datetime import datetime
+
+# Paths
+settings_file = "job_settings.json"
+categorized_jobs_file = "categorized_jobs.json"
+trend_data_file = "job_trend_data.xlsx"
+
+# Load settings
+def load_settings():
+    with open(settings_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Load categorized job listings
+def load_categorized_jobs():
+    with open(categorized_jobs_file, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Aggregate job listings and analyze trends
+def update_trend_analysis():
+    settings = load_settings()
+    categorized_jobs = load_categorized_jobs()
+    
+    high_priority_jobs = categorized_jobs.get("High Priority", [])
+    
+    data = []
+    for job in high_priority_jobs:
+        data.append({
+            "Date": datetime.today().strftime('%Y-%m-%d'),
+            "Title": job["title"],
+            "Company": job["company"],
+            "Location": job["location"],
+            "Salary": job.get("salary", "Unknown"),
+            "Job Type": job["job_type"],
+            "Category": "High Priority"
+        })
+    
+    df_new = pd.DataFrame(data)
+    
+    if os.path.exists(trend_data_file):
+        df_existing = pd.read_excel(trend_data_file)
+        df = pd.concat([df_existing, df_new], ignore_index=True)
+    else:
+        df = df_new
+    
+    df.to_excel(trend_data_file, index=False)
+    print(f"Updated job trend analysis in {trend_data_file}")
+
+# Run the trend analysis update
+if __name__ == "__main__":
+    update_trend_analysis()

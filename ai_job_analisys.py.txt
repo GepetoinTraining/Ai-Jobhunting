@@ -1,0 +1,64 @@
+import json
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load job listings from file
+def load_job_listings(filename="job_listings.json"):
+    with open(filename, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# Sample AI skillset and preferences (to be customized)
+ai_profile = {
+    "skills": ["machine learning", "NLP", "data analysis", "Python", "deep learning"],
+    "preferred_location": "Remote",
+    "salary_expectation": 80000,
+    "preferred_job_types": ["Full-Time", "Contract"],
+    "blacklisted_keywords": ["intern", "entry-level", "volunteer"]
+}
+
+# Function to categorize jobs
+def categorize_jobs(jobs, profile):
+    categorized_jobs = {"High Priority": [], "Medium Priority": [], "Low Priority": []}
+    vectorizer = TfidfVectorizer()
+    skill_text = " ".join(profile["skills"])
+    
+    for job in jobs:
+        # Compute similarity based on job description
+        descriptions = [skill_text, job["description"]]
+        tfidf_matrix = vectorizer.fit_transform(descriptions)
+        similarity_score = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+        
+        # Apply rules
+        salary_match = job.get("salary", 0) >= profile["salary_expectation"]
+        location_match = job["location"].lower() == profile["preferred_location"].lower()
+        job_type_match = job["job_type"] in profile["preferred_job_types"]
+        blacklisted = any(kw in job["title"].lower() for kw in profile["blacklisted_keywords"])
+        
+        if blacklisted:
+            priority = "Low Priority"
+        elif similarity_score > 0.5 and salary_match and (location_match or job_type_match):
+            priority = "High Priority"
+        elif similarity_score > 0.3 and (salary_match or location_match or job_type_match):
+            priority = "Medium Priority"
+        else:
+            priority = "Low Priority"
+        
+        categorized_jobs[priority].append(job)
+    
+    return categorized_jobs
+
+# Load and categorize job listings
+job_listings = load_job_listings()
+categorized_results = categorize_jobs(job_listings, ai_profile)
+
+# Convert to DataFrame for easy visualization
+df = []
+for priority, jobs in categorized_results.items():
+    for job in jobs:
+        job["Priority"] = priority
+        df.append(job)
+
+df = pd.DataFrame(df)
+import ace_tools as tools
+tools.display_dataframe_to_user(name="Categorized Job Listings", dataframe=df)

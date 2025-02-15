@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# Ensure dependencies are installed
+pip install requests beautifulsoup4 pandas openpyxl scikit-learn fpdf tk pyinstaller
+
+# Remove previous build files
+rm -rf build dist job_system.exe
+
+# Bundle everything into an executable
+pyinstaller --onefile --noconsole --name job_system \
+            --add-data "job_settings.json:." \
+            --add-data "job_listings.json:." \
+            --add-data "categorized_jobs.json:." \
+            --add-data "company_info:." \
+            --add-data "formatted_jobs:." \
+            --add-data "job_trend_data.xlsx:." \
+            --hidden-import sklearn.feature_extraction.text \
+            --hidden-import sklearn.metrics.pairwise \
+            job_dashboard.py
+
+# Inform the user
+echo "Executable created: dist/job_system.exe"
